@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import { Button, TextField, Box, Typography, Grid } from '@mui/material';
 import './App.css';
-import { db } from './firebase'; // Import Firestore
+import { db } from './firebase'; 
 
-import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore'; // Firestore functions
+import { doc, setDoc, getDoc } from 'firebase/firestore'; 
 
 const Draggable = ({ id, children }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
@@ -41,24 +41,39 @@ function App() {
   const [layoutName, setLayoutName] = useState(''); // Layout name for saving and loading
 
   useEffect(() => {
-    // Clear layout on page refresh
+    // Clear layout on page refresh or WHen page Loaded 
     setLayout([]);
-  }, []); // Runs once when the component mounts
+  }, []); // Runs once when the component mounts and loads
 
-  // Handles the drag and drop event
+  // Handles the drag and drop event from Left Side To Right Side
   const handleDragEnd = (event) => {
     const { id } = event.active;
     setLayout((prevLayout) => [...prevLayout, { id }]); // Add the dropped item to the layout array
   };
 
-  // Save the current layout to Firebase
+  // Save/Add the current layout to Firebase 
   const saveLayout = async () => {
     if (!layoutName.trim()) {
       alert('Please enter a layout name.');
       return;
     }
-
+  
     try {
+      // Check if the layout with the same name already exists
+      const docRef = doc(db, 'layouts', layoutName);
+      const docSnap = await getDoc(docRef);
+  
+      if (docSnap.exists()) {
+        // Layout with this name already exists, ask for confirmation to overwrite
+        const shouldOverwrite = window.confirm(
+          'A layout with this name already exists. Do you want to overwrite it?'
+        );
+        if (!shouldOverwrite) {
+          return; // If user chooses not to overwrite, exit the function
+        }
+      }
+  
+      // Save the layout to Firebase (overwrite if exists or save as new)
       await setDoc(doc(db, 'layouts', layoutName), { layout });
       alert('Layout saved to Firebase!');
     } catch (error) {
@@ -66,7 +81,7 @@ function App() {
       alert('Failed to save layout.');
     }
   };
-
+  
   // Load a layout from Firebase by its name
   const loadLayout = async () => {
     if (!layoutName.trim()) {
@@ -90,7 +105,7 @@ function App() {
     }
   };
 
-  // Publish the layout in a new browser window
+  // Publish the layout in a new browser window in the Form Of Text Only
   const publishPage = () => {
     const newWindow = window.open();
     newWindow.document.write("<html><body><h1>Published Page</h1><div>");
