@@ -37,27 +37,28 @@ const Droppable = ({ id, children }) => {
 };
 
 function App() {
-  const [layout, setLayout] = useState([]);
-  const [layoutName, setLayoutName] = useState('');
+  const [layout, setLayout] = useState([]); // Layout state to store draggable items
+  const [layoutName, setLayoutName] = useState(''); // Layout name for saving and loading
 
   useEffect(() => {
-    // Load layout from Firebase on component mount
-    fetchLayoutFromFirebase();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Clear layout on page refresh
+    setLayout([]);
+  }, []); // Runs once when the component mounts
 
+  // Handles the drag and drop event
   const handleDragEnd = (event) => {
     const { id } = event.active;
-    setLayout([...layout, { id }]);
+    setLayout((prevLayout) => [...prevLayout, { id }]); // Add the dropped item to the layout array
   };
 
+  // Save the current layout to Firebase
   const saveLayout = async () => {
     if (!layoutName.trim()) {
       alert('Please enter a layout name.');
       return;
     }
-  
+
     try {
-      // Save only the layout structure, not Firebase document IDs
       await setDoc(doc(db, 'layouts', layoutName), { layout });
       alert('Layout saved to Firebase!');
     } catch (error) {
@@ -65,19 +66,8 @@ function App() {
       alert('Failed to save layout.');
     }
   };
-  
 
-  const fetchLayoutFromFirebase = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'layouts'));
-      const layouts = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setLayout(layouts);
-    } catch (error) {
-      console.error('Error fetching layouts from Firebase:', error);
-      alert('Failed to load layouts.');
-    }
-  };
-
+  // Load a layout from Firebase by its name
   const loadLayout = async () => {
     if (!layoutName.trim()) {
       alert('Please enter a layout name.');
@@ -87,8 +77,9 @@ function App() {
     try {
       const docRef = doc(db, 'layouts', layoutName);
       const docSnap = await getDoc(docRef);
+
       if (docSnap.exists()) {
-        setLayout(docSnap.data().layout);
+        setLayout(docSnap.data().layout); // Set the retrieved layout to the state
         alert('Layout loaded from Firebase!');
       } else {
         alert('No layout found with that name.');
@@ -99,6 +90,7 @@ function App() {
     }
   };
 
+  // Publish the layout in a new browser window
   const publishPage = () => {
     const newWindow = window.open();
     newWindow.document.write("<html><body><h1>Published Page</h1><div>");
